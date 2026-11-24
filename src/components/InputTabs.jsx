@@ -222,17 +222,14 @@ function cleanOcrText(value) {
     return !isLikelyLogoArtifact && !isMostlyNoise
   })
 
-  const joined = []
+  const deduplicated = []
   for (const line of cleaned) {
-    const previous = joined[joined.length - 1]
-    if (previous && /[a-z]-$/i.test(previous) && /^[a-z]/i.test(line)) {
-      joined[joined.length - 1] = previous.slice(0, -1) + line
-    } else {
-      joined.push(line)
+    if (!deduplicated.some((d) => d.toLowerCase() === line.toLowerCase())) {
+      deduplicated.push(line)
     }
   }
 
-  return joined.join("\n").trim()
+  return deduplicated.join("\n").trim()
 }
 
 function formatOcrLines(lines = [], fallbackText = "") {
@@ -430,7 +427,10 @@ export default function InputTabs({ initialTab = "text", onCheck }) {
     const { createWorker, PSM, OEM } = await import("tesseract.js")
     const recognitionLanguage = resolveOcrLanguages(ocrLanguage, language)
     const worker = await createWorker(recognitionLanguage, OEM.LSTM_ONLY, {
-      langPath: TESSDATA_CDN,
+      workerPath: "/tesseract/worker.min.js",
+      corePath: "/tesseract/tesseract-core-lstm.wasm.js",
+      langPath: "/tessdata",
+      gzip: false,
       logger: (message) => {
         if (message.status === "loading tesseract core") setOcrProgress(8)
         if (message.status === "initializing tesseract") setOcrProgress(12)

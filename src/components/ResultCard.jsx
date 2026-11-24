@@ -52,8 +52,15 @@ export default function ResultCard({ result, onReset, localizing = false }) {
     addText(`${t("verdict_label")}: ${v.label}    ${t("trust_score")}: ${result.trustScore}/100`, 13, "bold", [20, 120, 80])
     y = 138
 
+    const cleanDisplayClaim = result.claim
+      ? result.claim
+          .split(/\r?\n/)
+          .map((s) => s.trim())
+          .filter((s, idx, arr) => s && arr.indexOf(s) === idx)
+          .join("\n")
+      : ""
     addText(t("claim_label"), 14, "bold", [21, 78, 138])
-    addText(result.claim, 11)
+    addText(cleanDisplayClaim, 11)
     addText(t("what_means"), 14, "bold", [21, 78, 138])
     addText(result.meaning, 11)
 
@@ -104,24 +111,26 @@ export default function ResultCard({ result, onReset, localizing = false }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl animate-float-up">
-      <Card className="overflow-hidden">
-        <div className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8" style={{ backgroundColor: v.soft }}>
-          <div className="flex items-center gap-4">
-            <span className="flex h-16 w-16 items-center justify-center rounded-2xl text-white" style={{ backgroundColor: v.color }}>
-              <Icon className="h-9 w-9" />
+    <div className="mx-auto max-w-4xl animate-float-up">
+      <Card className="overflow-hidden border border-slate-700/70 bg-[#0f1f30] shadow-[0_24px_70px_rgba(15,23,42,0.52)]">
+        <div className="flex flex-col gap-6 border-b border-slate-700/80 bg-[#16263d] px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-8">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/8 text-white shadow-inner shadow-slate-900/60" style={{ backgroundColor: v.color }}>
+              <Icon className="h-8 w-8" />
             </span>
-            <div>
-              <p className="text-base font-medium text-muted-foreground">{t("result_is")}</p>
-              <h2 className="font-display text-3xl font-extrabold sm:text-4xl" style={{ color: v.color }}>
+            <div className="space-y-1">
+              <p className="text-base font-medium text-slate-300">{t("result_is")}</p>
+              <h2 className="font-display text-3xl font-extrabold leading-none tracking-tight sm:text-4xl" style={{ color: v.color }}>
                 {v.label}
               </h2>
-              <p className="mt-1 text-base font-medium" style={{ color: v.color }}>
+              <p className="text-base font-medium text-slate-300">
                 {v.text}
               </p>
             </div>
           </div>
-          <TrustScore score={result.trustScore} verdict={result.verdict} />
+          <div className="flex items-center justify-center sm:justify-end">
+            <TrustScore score={result.trustScore} verdict={result.verdict} />
+          </div>
         </div>
 
         <div className="p-6 sm:p-8">
@@ -130,9 +139,9 @@ export default function ResultCard({ result, onReset, localizing = false }) {
               {t("report_localizing")}
             </p>
           )}
-          <div className="rounded-2xl bg-muted px-4 py-3">
-            <p className="text-sm font-semibold text-muted-foreground">{t("you_asked_check")}</p>
-            <p className="mt-1 text-lg font-medium">{result.claim}</p>
+          <div className="rounded-2xl border border-slate-700/80 bg-slate-900/40 px-4 py-4 shadow-inner shadow-slate-950/20">
+            <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-400">{t("you_asked_check")}</p>
+            <p className="mt-2 text-lg font-medium leading-relaxed text-slate-100">{result.claim}</p>
           </div>
 
           <div className="mt-6">

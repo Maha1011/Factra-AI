@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react"
 import { useApp } from "../context/AppContext.jsx"
 
-// Circular trust score from 0 to 100. Verdict wins over raw confidence so the UI cannot show a false claim as trustworthy.
+// Circular trust score from 0 to 100. Verdict still matters, but stronger evidence can raise the score
+// without letting false or misleading claims look fully trustworthy.
 function displayScoreForVerdict(verdict, score) {
-  if (verdict === "FALSE" || verdict === "RISKY") return 0
-  if (verdict === "MISLEADING" || verdict === "MANIPULATIVE") return 50
-  return Math.max(0, Math.min(100, Math.round(Number(score) || 0)))
+  const normalized = String(verdict || "").toUpperCase()
+  const value = Math.max(0, Math.min(100, Math.round(Number(score) || 0)))
+  if (normalized === "FALSE" || normalized === "RISKY") return Math.min(45, value)
+  if (normalized === "MISLEADING" || normalized === "MANIPULATIVE") return Math.min(70, value)
+  return value
 }
 
 export default function TrustScore({ score = 0, verdict }) {
@@ -33,17 +36,17 @@ export default function TrustScore({ score = 0, verdict }) {
         ? "var(--color-misleading)"
         : "var(--color-false)"
 
-  const radius = 54
+  const radius = 52
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (shown / 100) * circumference
 
   const band = displayScore >= 70 ? t("trust_band_high") : displayScore >= 40 ? t("trust_band_mid") : t("trust_band_low")
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative h-36 w-36">
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative h-32 w-32 shrink-0 sm:h-36 sm:w-36">
         <svg className="h-full w-full -rotate-90" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--color-muted)" strokeWidth="12" />
+          <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(148, 163, 184, 0.18)" strokeWidth="12" />
           <circle
             cx="60"
             cy="60"
@@ -58,19 +61,22 @@ export default function TrustScore({ score = 0, verdict }) {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-display text-3xl font-extrabold" style={{ color }}>
+          <span className="font-display text-4xl font-extrabold leading-none tracking-tight" style={{ color }}>
             {shown}
           </span>
-          <span className="text-sm font-medium text-muted-foreground">{t("of_100")}</span>
+          <span className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{t("of_100")}</span>
         </div>
       </div>
-      <p className="mt-2 text-base font-semibold text-muted-foreground">{t("trust_score")}</p>
-      <span
-        className="mt-1 rounded-full px-3 py-1 text-sm font-semibold"
-        style={{ color, backgroundColor: "color-mix(in srgb, " + color + " 14%, white)" }}
-      >
-        {band}
-      </span>
+
+      <div className="text-center">
+        <p className="text-lg font-semibold text-foreground">{t("trust_score")}</p>
+        <span
+          className="mt-2 inline-flex rounded-full px-4 py-1.5 text-sm font-semibold"
+          style={{ color, backgroundColor: "color-mix(in srgb, " + color + " 16%, rgba(15, 23, 42, 0.92))" }}
+        >
+          {band}
+        </span>
+      </div>
     </div>
   )
 }

@@ -126,6 +126,9 @@ const optionalUrlSchema = z.preprocess(
   z.string().trim().url().max(MAX_LINK_LENGTH).refine((value) => /^https?:\/\//i.test(value), "Only http/https URLs are allowed.").optional(),
 )
 const linkSchema = z.string().trim().url().max(MAX_LINK_LENGTH).refine((value) => /^https?:\/\//i.test(value), "Only http/https URLs are allowed.")
+const videoLinkSchema = z.object({
+  url: linkSchema,
+})
 const verifySchema = z.object({
   type: z.enum(["text", "link", "image", "video"]).default("text"),
   language: z.string().trim().min(2).max(8).default("en"),
