@@ -7,7 +7,6 @@ import cors from "cors"
 import helmet from "helmet"
 import rateLimit from "express-rate-limit"
 import { z } from "zod"
-import next from "next"
 import { createVerificationResult, extractImageTextWithGemini, extractVideoLinkContext, extractVideoTextWithGemini, relocalizeVerificationResult } from "./services/verification.js"
 import {
   checkSupabaseConnection,
@@ -46,12 +45,8 @@ for (const key of Object.keys(process.env)) {
     console.warn(`Security warning: ${key} is frontend-exposed by convention. Move this secret to a backend-only env var.`)
   }
 }
-const dev = process.env.NODE_ENV !== "production"
 const port = Number(process.env.BACKEND_PORT || 4000)
 const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173"
-const backendDir = fileURLToPath(new URL(".", import.meta.url))
-const app = next({ dev, dir: backendDir })
-const handle = app.getRequestHandler()
 
 const users = new Map()
 const sessions = new Map()
@@ -276,8 +271,6 @@ const requireAuth = async (req, res, nextMiddleware) => {
   return nextMiddleware()
 }
 
-await app.prepare()
-
 const server = express()
 
 server.set("trust proxy", "loopback")
@@ -287,7 +280,8 @@ server.use(helmet({
 }))
 server.use(cors({
   origin: (origin, callback) => {
-    if (!origin || origin === frontendOrigin || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin) || /^http:\/\/localhost:\d+$/.test(origin)) return callback(null, true)
+    const allowedOrigins = frontendOrigin.split(",").map((value) => value.trim()).filter(Boolean)
+    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin) || /^http:\/\/localhost:\d+$/.test(origin) || /^https:\/\/[^/]+\.vercel\.app$/.test(origin)) return callback(null, true)
     audit("cors_blocked", { origin })
     return callback(new Error("CORS origin is not allowed"))
   },
@@ -334,7 +328,7 @@ server.get("/api/health", async (req, res) => {
   json(res, 200, {
     ok: true,
     service: "Factra AI backend",
-    technologies: ["Next.js", "Express.js"],
+    technologies: ["Vite", "Express.js"],
     supabase: await checkSupabaseConnection(),
     timestamp: new Date().toISOString(),
   })
@@ -556,9 +550,14 @@ server.all(/^\/api\/.*/, (req, res) => {
   return json(res, 404, { error: "API route not found." })
 })
 
-server.all(/.*/, (req, res) => handle(req, res))
+server.all(/.*/, (req, res) => json(res, 404, { error: "Route not found." }))
 
-server.listen(port, () => {
-  console.log(`Factra backend ready at http://127.0.0.1:${port}`)
-})
+const isDirectExecution = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+if (isDirectExecution) {
+  server.listen(port, () => {
+    console.log(`Factra backend ready at http://127.0.0.1:${port}`)
+  })
+}
+
+export default server
 
